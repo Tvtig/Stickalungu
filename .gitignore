@@ -12,6 +12,11 @@
 
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta
+/[Aa]ssets/Textures/
+/[Aa]ssets/Allegorithmic/
+/[Aa]ssets/BOXOPHOBIC/
+/[Aa]ssets/Art/Models/Environment/
+/[Aa]ssets/Art/Models/Misc/
 
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*
