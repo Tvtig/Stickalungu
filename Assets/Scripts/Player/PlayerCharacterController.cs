@@ -7,6 +7,10 @@ public class PlayerCharacterController : MonoBehaviour
     private readonly string ANIMATOR_WALKING = "Walking";
     private readonly string ANIMATOR_RUNNING = "Running";
     private readonly string ANIMATOR_JUMP = "Jump";
+    private readonly string ANIMATOR_FIGHTING = "Fighting";
+    private readonly string ANIMATOR_HEAVY_PUNCH_01 = "HeavyPunch_01";
+    private readonly string ANIMATOR_HEAVY_PUNCH_02 = "HeavyPunch_02";
+    private readonly string ANIMATOR_LIGHT_PUNCH_01 = "LightPunch_01";
 
     [SerializeField]
     private float _maxMovementSpeed = 10f;
@@ -19,6 +23,8 @@ public class PlayerCharacterController : MonoBehaviour
     [SerializeField]
     private float _sprintSpeedModifier = 2f;
     [SerializeField]
+    private float _attackingSpeedModifier = 0.3f;
+    [SerializeField]
     private float _turnSharpness = 10f;
     [SerializeField]
     private float _accelerateion = 10f;
@@ -27,12 +33,18 @@ public class PlayerCharacterController : MonoBehaviour
     [SerializeField]
     private float _clampToGroundDistance = 0.07f;
     [SerializeField]
-    [Tooltip("The horizontal input is a float between [-1,1], the character will continue to turn as the input becomes closer to zero, this threshold determines how soon the character should stop turning")]
-    private float _turnStopThreshhold = 0.5f;
+    private float _punchSoundDelay = 0.4f;
+    [SerializeField]
+    private Transform _leftHandPosition;
+    [SerializeField]
+    private Transform _rightHandPosition;
+    [SerializeField]
+    private GameObject _punchEffect;
    
     private PlayerInputHandler _playerInputHandler;
     private Animator _animator;
     private CharacterController _characterController;
+    private AudioHandler _playerAudioHandler;
     private Vector3 _playerVelocity;
 
     private bool _playerIsWalking;
@@ -40,42 +52,92 @@ public class PlayerCharacterController : MonoBehaviour
     private float _playerLastJumpTime;
     private float _playerSnapToGroundTimeAllowance = 0.1f;
     private bool _jumped;
+    private bool _heavyAttack;
+    private bool _lightAttack;
+
+    [SerializeField]
+    private bool _isAttacking = false;
 
     void Start()
     {
         _playerInputHandler = GetComponent<PlayerInputHandler>();
         _animator = GetComponent<Animator>();
         _characterController = GetComponent<CharacterController>();
+        _playerAudioHandler = GetComponent<AudioHandler>();
     }
 
     void Update()
     {
+        Animator_ResetTriggers();
         Player_UpdateMovementStates();
+        Player_UpdateCombat();
         Player_Move();
         Animator_Update();
+        
+    }
+
+    private void Player_UpdateCombat()
+    {
+        if (_playerInputHandler.Input_GetHeavyAttack())
+        {
+            _heavyAttack = true;
+        }
+        else
+        {
+            _heavyAttack = false;
+        }
+
+        if (_playerInputHandler.Input_GetLightAttack())
+        {
+            _lightAttack = true;
+        }
+        else
+        {
+            _lightAttack = false;
+        }
     }
 
     private void Player_Move()
     {
         _jumped = false;
-        float speedModifier = (_playerIsSprinting) ? _sprintSpeedModifier : 1f;
+
+        float speedModifier = 1f;
+
+        if (_isAttacking)
+        {
+            speedModifier = _attackingSpeedModifier;
+        }
+        else if (_playerIsSprinting)
+        {
+            speedModifier = _sprintSpeedModifier;
+        }
 
         float horizontalInput = _playerInputHandler.Input_GetHorizontal();
+        
         Vector3 targetHorizontalDirection = Vector3.zero;
 
         bool rotate = false;
 
-        if (horizontalInput < -(_turnStopThreshhold))
+        if (horizontalInput < 0)
         {
             //Look left
             targetHorizontalDirection = -transform.right;
             rotate = true;
         }
-        else if (horizontalInput > _turnStopThreshhold)
+        else if (horizontalInput > 0)
         {
             //Look right
             targetHorizontalDirection = transform.right;
             rotate = true;
+        }
+
+        if (!rotate)
+        {
+            if(_playerInputHandler.Input_GetVertical() < 0)
+            {
+                targetHorizontalDirection = -transform.forward;
+                rotate = true;
+            }
         }
 
         if (rotate)
@@ -93,16 +155,9 @@ public class PlayerCharacterController : MonoBehaviour
         {
             bool move = false;
 
-            if (verticalInput > 0)
+            if (verticalInput != 0 || horizontalInput != 0)
             {
                 targetVerticalDirection = Vector3.forward;
-                move = true;
-            }
-            else if(verticalInput < 0)
-            {
-                targetVerticalDirection = Vector3.back;
-                //Half the movement speed if backwards
-                speedModifier = speedModifier / 2;
                 move = true;
             }
 
@@ -155,7 +210,36 @@ public class PlayerCharacterController : MonoBehaviour
         {
             _animator.SetTrigger(ANIMATOR_JUMP);
         }
+
+        if (_heavyAttack)
+        {
+            int random = Random.Range(1, 2);
+
+            if(random == 0)
+            {
+                _animator.SetTrigger(ANIMATOR_HEAVY_PUNCH_01);
+            }
+            else
+            {
+                _animator.SetTrigger(ANIMATOR_HEAVY_PUNCH_02);
+            }
+            
+            _heavyAttack = false;
+        }
+
+        if(_lightAttack)
+        {
+            _animator.SetTrigger(ANIMATOR_LIGHT_PUNCH_01);
+            _lightAttack = false;
+        }
         
+    }
+
+    private void Animator_ResetTriggers()
+    {
+        _animator.ResetTrigger(ANIMATOR_LIGHT_PUNCH_01);
+        _animator.ResetTrigger(ANIMATOR_HEAVY_PUNCH_01);
+        _animator.ResetTrigger(ANIMATOR_HEAVY_PUNCH_02);
     }
 
     private void Player_UpdateMovementStates()
@@ -165,23 +249,23 @@ public class PlayerCharacterController : MonoBehaviour
 
         if (_playerInputHandler.Input_GetSprint())
         {
-            if(_playerInputHandler.Input_GetVertical() > 0)
+            if(_playerInputHandler.Input_GetVertical() != 0 || _playerInputHandler.Input_GetHorizontal() != 0)
             {
                 sprinting = true;
             }
         }
 
-        if (_playerInputHandler.Input_GetVertical() != 0)
+        if (_playerInputHandler.Input_GetVertical() != 0 || _playerInputHandler.Input_GetHorizontal() != 0)
         {
             walking = true;
         }
 
-        if (sprinting && _characterController.isGrounded)
+        if (sprinting)
         {
             _playerIsWalking = false;
             _playerIsSprinting = true;
         }
-        else if (walking && _characterController.isGrounded)
+        else if (walking)
         {
             _playerIsWalking = true;
             _playerIsSprinting = false;
@@ -191,5 +275,15 @@ public class PlayerCharacterController : MonoBehaviour
             _playerIsWalking = false;
             _playerIsSprinting = false;
         }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        Vector3 position = other.ClosestPointOnBounds(_rightHandPosition.position);
+        GameObject pe = Instantiate(_punchEffect, position, Quaternion.identity);
+        _playerAudioHandler.Sound_Play(PlayerSound.Thud_02, 0f);
+        Destroy(pe, 0.5f);
+        Cube cube = other.gameObject.GetComponent<Cube>();
+        cube.Damage_Take();
     }
 }

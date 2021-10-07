@@ -9,8 +9,6 @@ public class Missile : MonoBehaviour
     [SerializeField]
     private float _rotationSpeed = 2f;
     [SerializeField]
-    private float _lifetime = 5f;
-    [SerializeField]
     private GameObject _target;
 
     private Rigidbody _rb;

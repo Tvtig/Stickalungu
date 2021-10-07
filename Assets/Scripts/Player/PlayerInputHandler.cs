@@ -6,10 +6,16 @@ public class PlayerInputHandler : MonoBehaviour
 {
     private const string AXIS_HORIZONTAL = "Horizontal";
     private const string AXIS_VERTICAL = "Vertical";
-    private const string AXIS_FIRE1 = "Fire3";
-    private const string AXIS_JUMP = "Jump";
+    private const string INPUT_A = "A";
+    private const string INPUT_B = "B";
+    private const string INPUT_X = "X";
+    private const string INPUT_Y = "Y";
+    private const string INPUT_LB = "LB";
+    private const string INPUT_RB = "RB";
 
     private bool _jumpPressed = false;
+    private bool _heavyAttackPressed = false;
+    private bool _lightAttackPressed = false;
 
     void Start()
     {
@@ -19,11 +25,13 @@ public class PlayerInputHandler : MonoBehaviour
     private void Update()
     {
         Set_JumpPressedState();
+        Set_HeavyAttackPressedState();
+        Set_LightAttackPressedState();
     }
 
     private void Set_JumpPressedState()
     {
-        if(Input.GetAxisRaw(AXIS_JUMP) > 0)
+        if(Input.GetAxisRaw(INPUT_A) > 0)
         {
             if (!_jumpPressed)
             {
@@ -33,6 +41,37 @@ public class PlayerInputHandler : MonoBehaviour
         else
         {
             _jumpPressed = false;
+        }
+    }
+
+    private void Set_HeavyAttackPressedState()
+    {
+        if (Input.GetAxisRaw(INPUT_B) > 0)
+        {
+            if (!_heavyAttackPressed)
+            {
+                _heavyAttackPressed = true;
+            }
+        }
+        else
+        {
+            _heavyAttackPressed = false;
+        }
+    }
+
+
+    private void Set_LightAttackPressedState()
+    {
+        if (Input.GetAxisRaw(INPUT_X) > 0)
+        {
+            if (!_lightAttackPressed)
+            {
+                _lightAttackPressed = true;
+            }
+        }
+        else
+        {
+            _lightAttackPressed = false;
         }
     }
 
@@ -48,11 +87,26 @@ public class PlayerInputHandler : MonoBehaviour
 
     public bool Input_GetSprint()
     {
-        return Input.GetAxisRaw(AXIS_FIRE1) > 0;
+        return Input.GetAxisRaw(INPUT_RB) > 0;
+    }
+
+    public bool Input_GetHeavyAttack()
+    {
+        return _heavyAttackPressed;
+    }
+
+    public bool Input_GetLightAttack()
+    {
+        return _lightAttackPressed;
     }
 
     public bool Input_GetJump()
     {
         return _jumpPressed;
+    }
+
+    public bool Input_GetFighting()
+    {
+        return Input.GetAxisRaw(INPUT_LB) > 0;
     }
 }
