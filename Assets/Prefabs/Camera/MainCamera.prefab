@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 8549955852340573084}
   - component: {fileID: 8549955852340573087}
   - component: {fileID: 289917127621568317}
-  - component: {fileID: 3268206803715556785}
+  - component: {fileID: 2623196974532606292}
   m_Layer: 0
   m_Name: MainCamera
   m_TagString: Untagged
@@ -127,7 +127,7 @@ Skybox:
   m_GameObject: {fileID: 8549955852340573086}
   m_Enabled: 1
   m_CustomSkybox: {fileID: 2100000, guid: 1cf6f4c6e6e0518419839d3f5448dd99, type: 2}
---- !u!114 &3268206803715556785
+--- !u!114 &2623196974532606292
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -139,3 +139,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a19bd000a4f65b45a29afa3a2bd6e8a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _targetTransform: {fileID: 0}
+  _followSpeed: 0
+  _xFollowDistance: 5
+  _zFollowDistance: 5
+  _followMoveThreshhold: 0.02

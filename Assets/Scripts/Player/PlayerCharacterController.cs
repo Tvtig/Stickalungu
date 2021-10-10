@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 public class PlayerCharacterController : MonoBehaviour
@@ -32,6 +33,8 @@ public class PlayerCharacterController : MonoBehaviour
     private float _inAirAcceleration = 10f;
     [SerializeField]
     private float _clampToGroundDistance = 0.07f;
+    [SerializeField]
+    private Transform _cameraTransform;
     [SerializeField]
     private float _punchSoundDelay = 0.4f;
     [SerializeField]
@@ -113,65 +116,20 @@ public class PlayerCharacterController : MonoBehaviour
         }
 
         float horizontalInput = _playerInputHandler.Input_GetHorizontal();
-        
-        Vector3 targetHorizontalDirection = Vector3.zero;
-
-        bool rotate = false;
-
-        if (horizontalInput < 0)
-        {
-            //Look left
-            targetHorizontalDirection = -transform.right;
-            rotate = true;
-        }
-        else if (horizontalInput > 0)
-        {
-            //Look right
-            targetHorizontalDirection = transform.right;
-            rotate = true;
-        }
-
-        if (!rotate)
-        {
-            if(_playerInputHandler.Input_GetVertical() < 0)
-            {
-                targetHorizontalDirection = -transform.forward;
-                rotate = true;
-            }
-        }
-
-        if (rotate)
-        {
-            Vector3 newDirection = Vector3.RotateTowards(transform.forward, targetHorizontalDirection, (_turnSharpness * Time.deltaTime), 0.0f);
-            transform.rotation = Quaternion.LookRotation(newDirection);
-        }
-
-        Vector3 targetVerticalDirection = Vector3.zero;
         float verticalInput = _playerInputHandler.Input_GetVertical();
-
-        Vector3 worldSpaceVerticalMovement = Vector3.zero;
 
         if (_characterController.isGrounded)
         {
-            bool move = false;
-
-            if (verticalInput != 0 || horizontalInput != 0)
+            if (horizontalInput + verticalInput != 0)
             {
-                targetVerticalDirection = Vector3.forward;
-                move = true;
-            }
-
-            worldSpaceVerticalMovement = transform.TransformVector(targetVerticalDirection);
-            Vector3 targetVelocity = worldSpaceVerticalMovement * _maxMovementSpeed * speedModifier;
-            targetVelocity += Vector3.down * _fallSpeed;
-
-            if (move)
-            {
+                transform.localEulerAngles = new Vector3(0, (Mathf.Atan2(_playerInputHandler.Input_GetHorizontal(), _playerInputHandler.Input_GetVertical()) * (180) / Mathf.PI), 0f);
+                Vector3 targetVelocity = transform.forward * speedModifier * _maxMovementSpeed;
                 _playerVelocity = Vector3.Lerp(_playerVelocity, targetVelocity, _accelerateion * Time.deltaTime);
+                _playerVelocity += Vector3.down;
             }
             else
             {
-                _playerVelocity = Vector3.zero;
+                _playerVelocity = Vector3.down;
             }
 
             if (_playerInputHandler.Input_GetJump())
@@ -184,7 +142,7 @@ public class PlayerCharacterController : MonoBehaviour
         }
         else
         {
-            _playerVelocity += worldSpaceVerticalMovement * _inAirAcceleration * Time.deltaTime;
+            _playerVelocity += transform.forward * _inAirAcceleration * Time.deltaTime;
             float verticalVelocity = _playerVelocity.y;
             Vector3 horizontalVelocity = Vector3.ProjectOnPlane(_playerVelocity, Vector3.up);
             horizontalVelocity = Vector3.ClampMagnitude(horizontalVelocity, _maxInAirMovementSpeed * speedModifier);
@@ -192,8 +150,15 @@ public class PlayerCharacterController : MonoBehaviour
             _playerVelocity += Vector3.down * _fallSpeed * Time.deltaTime;
         }
 
+        //No input, zero out player velocity
+        //if (horizontalInput + verticalInput == 0)
+        //{
+        //    _playerVelocity = Vector3.zero;
+        //}
+
         if (!_characterController.isGrounded && transform.position.y <= _clampToGroundDistance && (Time.deltaTime - _playerLastJumpTime) > _playerSnapToGroundTimeAllowance)
         {
+            _playerVelocity = Vector3.zero;
             _characterController.SimpleMove(Vector3.down);
         }
         else
